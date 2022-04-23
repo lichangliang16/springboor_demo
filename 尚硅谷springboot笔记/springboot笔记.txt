@@ -1,0 +1,211 @@
+# springboot基础入门
+
+##  springboot自动配置原理
+
+### @SpringBootApplication
+
+作用于main方法的类上,是一个组合注解@SpringBootConfiguration@EnableAutoConfiguration@ComponentScan
+
+### @Configuration 
+
+表明当前类是一个配置类 配置类本身也是组件
+
+springboot2中再其中新增了一个属性 
+
+proxyBeanMethods属性默认值是true,也就是说该配置类会被代理（CGLIB），在同一个配置文件中调用其它被@Bean注解标注的方法获取对象时会直接从IOC容器之中获取
+
+proxyBeanMethods 代理bean的方法
+ * Full(proxyBeanMethods = true)、【使用cglib动态代理创建当前配置类,保证每个@Bean方法被调用多少次返回的组件都是单实例的】此时配置类的类型为代理对象EnhancerBySpringCGLIB
+
+ * Lite(proxyBeanMethods = false)【不使用代理模式创建当前类,每个@Bean方法被调用多少次返回的组件都是新创建的】此时配置类的类型就是配置类
+
+ * 组件依赖必须使用Full模式默认。其他默认是否Lite模
+
+   Full模式和Lite模式
+
+   Full模式和Lite模式是针对spring配置而言的，和xml配置无关。
+
+   何时为Lite模式：
+
+   1.类上有@Component注解
+
+   2.类上有@ComponentScan注解
+
+   3.类上有@Import[注解]()
+
+   4.类上有@ImportResource注解
+
+   5.类上没有任何注解，但是类中存在@Bean方法
+
+   6.类上有@Configuration(proxyBeanMethods = false)注解
+
+   Lite总结：运行时不用生成CGLIB子类，提高运行性能，降低启动时间，可以作为普通类使用。但是不能声明@Bean之间的依赖
+
+   何时为Full模式：
+
+   1.标注有@Configuration或者@Configuration(proxyBeanMethods = true)的类被称为Full模式的配置类。
+
+   Full模式总结：单例模式能有效避免Lite模式下的错误。性能没有Lite模式好
+
+### @import	
+
+​	context.getBeanNamesForType(xxx.class);根据类型获取所有组件的名字(类型为xxx的所有组件bean id)
+
+​	@Import(xxx.class,xxx.class)可作用于配置类或组件类上,导入组件,导入的组件name默认为class的全类名
+
+### @Conditional
+
+@Conditional 满足条件才注册组件
+
+派生了很多的子注解，它们可以添加在@Bean注解的方法上也可以放在配置类上，在方法上满足所需条件时则执行方法中内容并注册到 IOC 容器中如果不满足条件则不注册，在配置类中满足需求时则执行配置类中所有的@Bean方法并注册到 IOC 容器中如果不满足条件则不注册，以@ConditionalOnBean(name="tom")为例，当 IOC 容器中拥有id为tom的组件时才会满足条件，否则不满足条件 
+
+run.containsBean("tom")方法：判断 IOC 容器中是否拥有id为tom的组件，有返回true，没有返回fals
+
+![](springboot_condition注解.png)
+
+### @ImportResorce
+
+引入原生配置文件的注解
+
+@ImportResource("classpath:beans.xml") 引入resources下的beans.xml文件
+
+### 配置绑定
+
+把配置文件中的内容绑定到java类上
+
+#### 1.java代码读取配置文件内容 绑定到JavaBean
+
+使用代码方式读取properties文件中的内容，并且把它封装到JavaBean中，以供随时使用
+
+```java
+public class getProperties {
+     public static void main(String[] args) throws FileNotFoundException, IOException {
+         Properties pps = new Properties();
+         pps.load(new FileInputStream("a.properties"));
+         Enumeration enum1 = pps.propertyNames();//得到配置文件的名字
+         while(enum1.hasMoreElements()) {
+             String strKey = (String) enum1.nextElement();
+             String strValue = pps.getProperty(strKey);
+             System.out.println(strKey + "=" + strValue);
+             //封装到JavaBean。
+         }
+     }
+ }
+```
+
+#### 2.注解方式
+
+##### 1、在要配置的实体类上用@Component+@ConfigurationProperties
+
+@Component让spring识别这个类 
+
+@ConfigurationProperties 为这个类配置属性 prefix会读取配置文件application.properties中的内容,如果属性名和前缀.属性的值匹配会自动赋值
+
+```java
+@Component
+@ConfigurationProperties(prefix = "mycar")
+public class Car {
+    private String brand;
+    private Integer price;
+
+    public Car() {
+    }
+
+    public Car(String brand, Integer price) {
+        this.brand = brand;
+        this.price = price;
+    }
+
+    public String getBrand() {
+        return brand;
+    }
+
+    public void setBrand(String brand) {
+        this.brand = brand;
+    }
+
+    public Integer getPrice() {
+        return price;
+    }
+
+    public void setPrice(Integer price) {
+        this.price = price;
+    }
+
+    @Override
+    public String toString() {
+        return "Car{" +
+                "brand='" + brand + '\'' +
+                ", price=" + price +
+                '}';
+    }
+}
+```
+
+##### 2、在配置类@EnableConfigurationProperties(Car.class)
+
+#####       实体类上@ConfigurationProperties(prefix = "mycar")
+
+@ConfigurationProperties(prefix = "mycar")是读取配置文件中的内容进行赋值,并没有把Car注册到sping容器
+
+@EnableConfigurationProperties(Car.class)作用于配置类有两个作用,一是开启配置绑定功能,二是把Car注册进spring容器(此时的Car已经读取了配置文件并赋值)
+
+```java
+@Configuration(proxyBeanMethods = true)
+@EnableConfigurationProperties(Car.class)
+public class BeanConfig {
+
+    @Bean("user01")
+    public User user01(){
+        User user = new User("zhangsan", "22");
+        user.setPet(pet1());
+        return user;
+    }
+
+    @Bean("pet")
+    public Pet pet1(){
+        return new Pet("jack");
+    }
+
+}
+```
+
+```java
+@ConfigurationProperties(prefix = "mycar")
+public class Car {
+    private String brand;
+    private Integer price;
+
+    public Car() {
+    }
+
+    public Car(String brand, Integer price) {
+        this.brand = brand;
+        this.price = price;
+    }
+
+    public String getBrand() {
+        return brand;
+    }
+
+    public void setBrand(String brand) {
+        this.brand = brand;
+    }
+
+    public Integer getPrice() {
+        return price;
+    }
+
+    public void setPrice(Integer price) {
+        this.price = price;
+    }
+
+    @Override
+    public String toString() {
+        return "Car{" +
+                "brand='" + brand + '\'' +
+                ", price=" + price +
+                '}';
+    }
+}
+```
