@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
-@Configuration(proxyBeanMethods = true)
+//@Configuration(proxyBeanMethods = true)
 @EnableConfigurationProperties(Car.class)
 public class BeanConfig {
 
@@ -22,7 +22,7 @@ public class BeanConfig {
         return user;
     }
 
-    @Bean("pet")
+    @Bean("pet1")
     public Pet pet1(){
         return new Pet("jack");
     }

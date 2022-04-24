@@ -37,7 +37,9 @@ public class mainApplication {
 //        User user01 = run.getBean("user01", User.class);
 //        System.out.println(user01);
 //        Pet pet = run.getBean("pet", Pet.class);
-        boolean haha = run.containsBean("haha");
-        System.out.println(haha);
+//        boolean haha = run.containsBean("haha");
+//        System.out.println(haha);
+//        boolean car = run.containsBean("car");
+//        System.out.println(car);
     }
 }
