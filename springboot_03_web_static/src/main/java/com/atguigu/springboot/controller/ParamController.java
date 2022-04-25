@@ -1,5 +1,6 @@
 package com.atguigu.springboot.controller;
 
+import com.atguigu.springboot.bean.Person;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.Cookie;
@@ -42,5 +43,11 @@ public class ParamController {
         Map<String,Object> map = new HashMap<>();
         map.put("content",content);
         return map;
+    }
+
+    @PostMapping("/saveuser")
+    @ResponseBody
+    public Person saveUser(Person person){
+        return person;
     }
 }

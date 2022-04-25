@@ -47,10 +47,5 @@ public String getUser(){
 
 
     //自定义filter 改变表单提交需要的_method的为_m
-    @Bean
-    public HiddenHttpMethodFilter hiddenHttpMethodFilter(){
-        HiddenHttpMethodFilter methodFilter = new HiddenHttpMethodFilter();
-        methodFilter.setMethodParam("_m");
-        return methodFilter;
-    }
+
 }

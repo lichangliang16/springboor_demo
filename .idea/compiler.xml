@@ -8,8 +8,9 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="springboot_01_hello" />
-        <module name="springboot_03_web_static" />
         <module name="springboot_02_yaml" />
+        <module name="springboot_03_web_static" />
+        <module name="springboot_03_web_demo" />
       </profile>
     </annotationProcessing>
   </component>
@@ -17,6 +18,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="springboot_01_hello" options="-parameters" />
       <module name="springboot_02_yaml" options="-parameters" />
+      <module name="springboot_03_web_demo" options="-parameters" />
       <module name="springboot_03_web_static" options="-parameters" />
     </option>
   </component>
