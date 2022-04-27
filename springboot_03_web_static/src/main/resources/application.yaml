@@ -4,6 +4,3 @@
 #  web:
 #    resources:
 #      static-locations: [classpath:/haha/]
-server:
-  servlet:
-    context-path: /world

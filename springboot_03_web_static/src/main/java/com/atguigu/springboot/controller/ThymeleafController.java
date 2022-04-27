@@ -10,8 +10,18 @@ public class ThymeleafController {
     @RequestMapping("/hellothy")
     public String helloThy(Model model){
 
-        model.addAttribute("msg","message");
-        model.addAttribute("link","http://www.baidu.com");
+//        model.addAttribute("msg","message");
+//        model.addAttribute("link","http://www.baidu.com");
         return "hellothy";
+    }
+
+    @RequestMapping("/testForward")
+    public String testForward(){
+        return "forward:hellothy";
+    }
+
+    @RequestMapping("/testRedirect")
+    public String testRedirect(){
+        return "redirect:hellothy";
     }
 }
