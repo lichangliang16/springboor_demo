@@ -1597,3 +1597,301 @@ spring.servlet.multipart.max-request-size=100MB #指定上传的所有文件的�
 - ![添加自定义错误页](添加自定义错误页.png)
 - 要完全替换默认行为，可以实现 `ErrorController `并注册该类型的Bean定义，或添加`ErrorAttributes类型的组件`以使用现有机制但替换其内容。
 - error/下的4xx，5xx页面会被自动解析
+
+#### 2、定制错误处理逻辑
+
+- 自定义错误页
+
+- - error/404.html   error/5xx.html；有精确的错误状态码页面就匹配精确，没有就找 4xx.html；如果都没有就触发白页
+
+- @ControllerAdvice+@ExceptionHandler处理全局异常；底层是 **ExceptionHandlerExceptionResolver 支持的**
+- @ResponseStatus+自定义异常 ；底层是 **ResponseStatusExceptionResolver ，把responsestatus注解的信息底层调用** **response.sendError(statusCode, resolvedReason)；tomcat发送的/error**
+- Spring底层的异常，如 参数类型转换异常；**DefaultHandlerExceptionResolver 处理框架底层的异常。**
+
+- - response.sendError(HttpServletResponse.**SC_BAD_REQUEST**, ex.getMessage()); 
+
+#### 3、异常处理自动配置原理
+
+- **ErrorMvcAutoConfiguration  自动配置异常处理规则**
+
+- - **容器中的组件：类型：DefaultErrorAttributes ->** **id：errorAttributes**
+
+- - - **public class** **DefaultErrorAttributes** **implements** **ErrorAttributes**, **HandlerExceptionResolver**
+    - **DefaultErrorAttributes**：定义错误页面中可以包含哪些数据。
+
+- - **容器中的组件：类型：****BasicErrorController --> id：basicErrorController（json+白页 适配响应）**
+
+- - - **处理默认** **/error 路径的请求；页面响应** **new** ModelAndView(**"error"**, model)；
+    - **容器中有组件 View**->**id是error**；（响应默认错误页）
+    - 容器中放组件 **BeanNameViewResolver（视图解析器）；按照返回的视图名作为组件的id去容器中找View对象。**
+
+- - **容器中的组件：**类型：**DefaultErrorViewResolver -> id：**conventionErrorViewResolver
+
+- - - 如果发生错误，会以HTTP的状态码 作为视图页地址（viewName），找到真正的页面
+    - error/404、5xx.html
+
+#### 4、异常处理步骤流程
+
+1、执行目标方法，目标方法运行期间有任何异常都会被catch、而且标志当前请求结束；并且用 **dispatchException** 
+
+2、进入视图解析流程（页面渲染？） 
+
+processDispatchResult(processedRequest, response, mappedHandler, **mv**, **dispatchException**);
+
+3、**mv** = **processHandlerException**；处理handler发生的异常，处理完成返回ModelAndView；
+
+- 1、遍历所有的 **handlerExceptionResolvers，看谁能处理当前异常【****HandlerExceptionResolver处理器异常解析器****】**
+
+- **2、系统默认的  异常解析器；**
+
+- - **1、DefaultErrorAttributes先来处理异常。把异常信息保存到rrequest域，并且返回null；**
+  - **2、默认没有任何人能处理异常，所以异常会被抛出**
+
+- - - **1、如果没有任何人能处理最终底层就会发送 /error 请求。会被底层的BasicErrorController处理**
+    - **2、解析错误视图；遍历所有的**  **ErrorViewResolver  看谁能解析。**
+
+- - - **3、默认的** **DefaultErrorViewResolver ,作用是把响应状态码作为错误页的地址，error/500.html** 
+    - **4、模板引擎最终响应这个页面** **error/500.html** 
+
+### 10、定制化原理
+
+##### 1、定制化的常见方式 
+
+- 修改配置文件；
+- **xxxxxCustomizer；**
+- **编写自定义的配置类   xxxConfiguration；+** **@Bean替换、增加容器中默认组件；视图解析器** 
+- **Web应用 编写一个配置类实现** **WebMvcConfigurer 即可定制化web功能；+ @Bean给容器中再扩展一些组件**
+
+##### 2、原理分析套路
+
+**场景starter** **- xxxxAutoConfiguration - 导入xxx组件 - 绑定xxxProperties --** **绑定配置文件项** 
+
+一般来说引入场景启动器,springboot会默认自动配置好,我们只需要按照需求更改配置文件,如果实在需要自定义可以在容器中注册自定义的组件
+
+## 数据访问
+
+### 1、SQL
+
+#### 1、数据源的自动配置
+
+什么是数据源:
+
+JDBC2.0 提供了javax.sql.DataSource接口，它负责建立与数据库的连接，当在应用程序中访问数据库时
+不必编写连接数据库的代码，直接引用DataSource获取数据库的连接对象即可。用于获取操作数据Connection对象。
+
+数据源与数据库连接池:
+
+数据源建立多个数据库连接，这些数据库连接会保存在数据库连接池中，当需要访问数据库时，只需要从数据库连接池中
+获取空闲的数据库连接，当程序访问数据库结束时，数据库连接会放回数据库连接池中。
+
+##### 1、导入JDBC场景启动器
+
+```java
+<dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-data-jdbc</artifactId>
+    </dependency>
+```
+
+数据库驱动？
+
+为什么导入JDBC场景，官方不导入驱动？官方不知道我们接下要操作什么数据库。
+
+数据库版本和驱动版本对应
+
+默认版本：<mysql.version>8.0.22</mysql.version>
+
+```java
+
+        默认版本：<mysql.version>8.0.22</mysql.version>
+
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+<!--            <version>5.1.49</version>-->
+        </dependency>
+想要修改版本
+1、直接依赖引入具体版本（maven的就近依赖原则）
+2、重新声明版本（maven的属性的就近优先原则）
+    <properties>
+        <java.version>1.8</java.version>
+        <mysql.version>5.1.49</mysql.version>
+    </properties>
+```
+##### 2、分析自动配置
+
+自动配置的类
+
+- DataSourceAutoConfiguration ： 数据源的自动配置
+
+- - 修改数据源相关的配置：**spring.datasource**
+  - **数据库连接池的配置，是自己容器中没有DataSource才自动配置的**
+  - 底层配置好的连接池是：**HikariDataSource**
+
+```java
+@Configuration(proxyBeanMethods = false)
+@Conditional(PooledDataSourceCondition.class)
+@ConditionalOnMissingBean({ DataSource.class, XADataSource.class })
+@Import({ DataSourceConfiguration.Hikari.class, DataSourceConfiguration.Tomcat.class,
+		DataSourceConfiguration.Dbcp2.class, DataSourceConfiguration.OracleUcp.class,
+		DataSourceConfiguration.Generic.class, DataSourceJmxConfiguration.class })
+protected static class PooledDataSourceConfiguration
+```
+
+- DataSourceTransactionManagerAutoConfiguration： 事务管理器的自动配置
+- JdbcTemplateAutoConfiguration： **JdbcTemplate的自动配置，可以来对数据库进行crud**
+
+- - 可以修改这个配置项@ConfigurationProperties(prefix = **"spring.jdbc"**) 来修改JdbcTemplate
+  - @Bean@Primary    JdbcTemplate；容器中有这个组件
+
+- JndiDataSourceAutoConfiguration： jndi的自动配置
+- XADataSourceAutoConfiguration： 分布式事务相关的
+
+##### 3、修改配置项
+
+```java
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/mybatis
+    username: root
+    password: root
+```
+
+##### 4、测试
+
+```java
+package com.atguigu.springboot;
+
+//import org.junit.Test;
+//import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.junit4.SpringRunner;
+
+@SpringBootTest
+//@RunWith(SpringRunner.class)
+public class Springboot04AccessdataApplicationTests {
+
+    @Test
+    public void contextLoads() {
+    }
+
+    @Autowired
+    private JdbcTemplate template;
+
+    @Test
+    public void testTemp(){
+        Long aLong = template.queryForObject("select count(*) from t_emp", Long.class);
+        System.out.println("along="+aLong);
+    }
+}
+```
+
+#### 2、druid数据源starter整合
+
+##### 1、引入druid-starter
+
+```java
+    <dependency>
+        <groupId>com.alibaba</groupId>
+        <artifactId>druid-spring-boot-starter</artifactId>
+        <version>1.1.17</version>
+    </dependency>
+```
+
+##### 2、分析自动配置
+
+- 扩展配置项 **spring.datasource.druid**
+- DruidSpringAopConfiguration.**class**,   监控SpringBean的；配置项：**spring.datasource.druid.aop-patterns**
+- DruidStatViewServletConfiguration.**class**, 监控页的配置：**spring.datasource.druid.stat-view-servlet；默认开启**
+-  DruidWebStatFilterConfiguration.**class**, web监控配置；**spring.datasource.druid.web-stat-filter；默认开启**
+- DruidFilterConfiguration.**class**}) 所有Druid自己filter的配置
+
+```java
+private static final String FILTER_STAT_PREFIX = "spring.datasource.druid.filter.stat";
+private static final String FILTER_CONFIG_PREFIX = "spring.datasource.druid.filter.config";
+private static final String FILTER_ENCODING_PREFIX = "spring.datasource.druid.filter.encoding";
+private static final String FILTER_SLF4J_PREFIX = "spring.datasource.druid.filter.slf4j";
+private static final String FILTER_LOG4J_PREFIX = "spring.datasource.druid.filter.log4j";
+private static final String FILTER_LOG4J2_PREFIX = "spring.datasource.druid.filter.log4j2";
+private static final String FILTER_COMMONS_LOG_PREFIX = "spring.datasource.druid.filter.commons-log";
+private static final String FILTER_WALL_PREFIX = "spring.datasource.druid.filter.wall";
+```
+
+##### 3、配置实例
+
+```java
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/mybatis
+    username: root
+    password: root
+    druid:
+      aop-patterns: com.atguigu.springboot.*  #监控SpringBean
+      filters: stat,wall     # 底层开启功能，stat（sql监控），wall（防火墙）
+
+      stat-view-servlet: # 配置监控页功能
+        enabled: true
+        login-username: admin
+        login-password: admin
+        resetEnable: false
+
+      web-stat-filter: # 监控web
+        enabled: true
+        urlPattern: /*
+        exclusions: '*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*'
+
+
+      filter:
+        stat: # 对上面filters里面的stat的详细配置
+          slow-sql-millis: 1000
+          logSlowSql: true
+          enabled: true
+        wall:
+          enabled: true
+          config:
+            drop-table-allow: false
+```
+
+#### 3、整合mybatis
+
+- 引入mybatis-starter
+
+- ```java
+      <dependency>
+          <groupId>org.mybatis.spring.boot</groupId>
+          <artifactId>mybatis-spring-boot-starter</artifactId>
+          <version>2.1.4</version>
+      </dependency>
+  ```
+
+- **配置application.yaml中，指定mapper-location位置即可**
+
+- 编写Mapper接口并标注@Mapper注解
+
+- 简单方法直接注解方式
+
+- 复杂方法编写mapper.xml进行绑定映射
+
+- *@MapperScan("com.atguigu.admin.mapper") 简化，其他的接口就可以不用标注@Mapper注解*
+
+注意:**当Controller中的方法修饰符为private时，会导致自动注入的service对象为空(controller中定义的方法为private)，私有方法被接口访问时候，因为private作用域的问题，无法获取该方法，报空指针)**
+
+mapper代码中@Insert 注解下 @Options(useGeneratedKeys = true,keyProperty = "eid")表示使用主键自动生成策略,属性为eid
+
+```java
+@Mapper
+public interface EmpMapper {
+
+    @Select("select * from t_emp where eid = #{id}")
+    Emp selectEmpById(String id);
+
+    @Insert("insert into t_emp(emp_name,age,sex,email) values(#{empName},#{age},#{sex},#{email})")
+    @Options(useGeneratedKeys = true,keyProperty = "eid")
+    void insertEmp(Emp emp);
+}
+```

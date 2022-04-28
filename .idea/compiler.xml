@@ -9,10 +9,19 @@
         <outputRelativeToContentRoot value="true" />
         <module name="springboot_01_hello" />
         <module name="springboot_02_yaml" />
-        <module name="springboot_03_web_static" />
+        <module name="springboot_04_accessdata" />
         <module name="springboot_03_web_demo" />
+        <module name="springboot_03_web_static" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="springboot" target="8" />
+      <module name="springboot_01_hello" target="8" />
+      <module name="springboot_02_yaml" target="8" />
+      <module name="springboot_03_web_demo" target="1.8" />
+      <module name="springboot_03_web_static" target="8" />
+      <module name="springboot_04_accessdata" target="1.8" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
@@ -20,6 +29,7 @@
       <module name="springboot_02_yaml" options="-parameters" />
       <module name="springboot_03_web_demo" options="-parameters" />
       <module name="springboot_03_web_static" options="-parameters" />
+      <module name="springboot_04_accessdata" options="-parameters" />
     </option>
   </component>
 </project>
