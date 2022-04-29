@@ -91,11 +91,11 @@
                                     <div class="span6">
                                         <div class="dataTables_paginate paging_bootstrap pagination">
                                             <ul>
-                                                <li th:class="${users.current == 1 ?'':'active'}" class="prev disabled"><a href="#" th:href="@{/dynamic_table(pn=${users.current-1})}">← 前一页</a></li>
+                                                <li th:class="${users.current == 1 ?'':'active'}" class="prev disabled"><a href="#" th:href="@{/dynamic_table(pn=${users.current}-1)}">← 前一页</a></li>
                                                 <li th:class="${num == users.current?'active':''}" th:each="num:${#numbers.sequence(1,users.pages)}" >
                                                     <a th:href="@{/dynamic_table(pn=${num})}">[[${num}]]</a>
                                                 </li>
-                                                <li class="next disabled" ><a href="#" th:href="@{/dynamic_table(pn=${users.current}+1)}">下一页 → </a></li>
+                                                <li class="next disabled" th:class="${users.current == users.pages ?'next disabled':'active'}"><a href="#" th:href="@{/dynamic_table(pn=${users.current}+1)}">下一页 → </a></li>
                                             </ul>
                                         </div>
                                     </div>

@@ -1,6 +1,9 @@
 package com.example.springboot_03_web_demo.controller;
 
 import com.example.springboot_03_web_demo.bean.User;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +16,8 @@ import javax.servlet.http.HttpSession;
 @Controller
 public class DemoController {
 
+    @Autowired
+    StringRedisTemplate redisTemplate;
 
     //在地址栏输入/或/login 跳转到登录页
     @GetMapping(value = {"/","login"})
@@ -47,6 +52,11 @@ public class DemoController {
 //            return "login";
 //        }
         //return "main";
+        ValueOperations<String, String> stringStringValueOperations = redisTemplate.opsForValue();
+        String mainCount = stringStringValueOperations.get("/main");
+        String dynamicCount = stringStringValueOperations.get("/dynamic_table");
+        model.addAttribute("mainCount",mainCount);
+        model.addAttribute("dynamicCount",dynamicCount);
         return "main";
     }
 }
