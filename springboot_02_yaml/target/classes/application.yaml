@@ -1,0 +1,28 @@
+person:
+  userName: licl
+  boss: false
+  birth:  1997/10/08
+  age:  25
+  interests:
+    - 游戏
+    - 学习
+  animal:
+    - 猫
+    - 狗
+  score:
+    english:
+      first: 88
+      second: 99
+      third: 100
+    math: [5,6,7]
+  pet:
+    name: pix
+    weight: 16
+  salarys:
+    - 10.88
+    - 20.00
+  allPets:
+    sick:
+      - {name: tom,weight:  20}
+      - {name: jerry,weight: 47}
+    healthy:  [{name: shuke,weight: 47},{name: beita,weight: 57}]
